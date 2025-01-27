@@ -1,204 +1,414 @@
-from flask import Flask, request, render_template_string
+from flask import Flask, render_template_string
 import requests
-from threading import Thread, Event
+import re
 import time
-import random
-import string
- 
+import os
+
 app = Flask(__name__)
 app.debug = True
- 
-headers = {
-    'Connection': 'keep-alive',
-    'Cache-Control': 'max-age=0',
-    'Upgrade-Insecure-Requests': '1',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36',
-    'user-agent': 'Mozilla/5.0 (Linux; Android 11; TECNO CE7j) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.40 Mobile Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-    'Accept-Encoding': 'gzip, deflate',
-    'Accept-Language': 'en-US,en;q=0.9,fr;q=0.8',
-    'referer': 'www.google.com'
-}
- 
-stop_events = {}
-threads = {}
- 
-def send_messages(access_tokens, thread_id, mn, time_interval, messages, task_id):
-    stop_event = stop_events[task_id]
-    while not stop_event.is_set():
-        for message1 in messages:
-            if stop_event.is_set():
-                break
-            for access_token in access_tokens:
-                api_url = f'https://graph.facebook.com/v15.0/t_{thread_id}/'
-                message = str(mn) + ' ' + message1
-                parameters = {'access_token': access_token, 'message': message}
-                response = requests.post(api_url, data=parameters, headers=headers)
-                if response.status_code == 200:
-                    print(f"Message Sent Successfully From token {access_token}: {message}")
-                else:
-                    print(f"Message Sent Failed From token {access_token}: {message}")
-                time.sleep(time_interval)
- 
-@app.route('/', methods=['GET', 'POST'])
-def send_message():
-    if request.method == 'POST':
-        token_option = request.form.get('tokenOption')
-        
-        if token_option == 'single':
-            access_tokens = [request.form.get('singleToken')]
-        else:
-            token_file = request.files['tokenFile']
-            access_tokens = token_file.read().decode().strip().splitlines()
- 
-        thread_id = request.form.get('threadId')
-        mn = request.form.get('kidx')
-        time_interval = int(request.form.get('time'))
- 
-        txt_file = request.files['txtFile']
-        messages = txt_file.read().decode().splitlines()
- 
-        task_id = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
- 
-        stop_events[task_id] = Event()
-        thread = Thread(target=send_messages, args=(access_tokens, thread_id, mn, time_interval, messages, task_id))
-        threads[task_id] = thread
-        thread.start()
- 
-        return f'Task started with ID: {task_id}'
- 
-    return render_template_string('''
+
+html_content = '''
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Milan hwre</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-  <style>
-    /* CSS for styling elements */
-    label { color: white; }
-    .file { height: 30px; }
-    body {
-      background-image: url('https://i.ibb.co/XSDz0Mc/1737887510693.jpg');
-      background-size: cover;
-      background-repeat: no-repeat;
-      color: white;
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SERVER MENU</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta2/css/all.min.css" integrity="sha512-YWzhKL2whUzgiheMoBFwW8CKV4qpHQAEuvilg9FAn5VJUDwKZZxkJNuGM4XkWuk94WCrrwslk8yWNGmY1EduTA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+   <link rel="stylesheet" href="style.css" type="text/css" media="all" />
+    <style>
+        *{
+
+    box-sizing: border-box;
+
+    margin: 0;
+    padding: 0;
+}
+body {
+    font-family: "Poppins", sans-serif;
+    --color1: #FFF ;
+    --color2: #181818 ;
+    background-color: white;
+    background-size: cover;
+    color: white;
+}
+h3{
+    font-size: 12px;
+    color: black;
+    text-align: center;
+}
+h2{
+    text-align: center;
+    font-size: 19px;
+    font-family: cursive;
+    color: black;
+}
+.nav-bar {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    list-style: none;
+    position: relative;
+    background-color: var(--color2);
+    padding: 12px 20px;
+}
+.logo img {width: 40px;}
+.menu {display: flex;}
+.menu li {padding-left: 30px;}
+.menu li a {
+    display: inline-block;
+    text-decoration: none;
+    color: var(--color1);
+    text-align: center;
+    transition: 0.15s ease-in-out;
+    position: relative;
+    text-transform: uppercase;
+}
+.menu li a::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background-color: var(--color1);
+    transition: 0.15s ease-in-out;
+}
+.menu li a:hover:after {width: 100%;}
+.open-menu , .close-menu {
+    position: absolute;
+    color: var(--color1);
+    cursor: pointer;
+    font-size: 1.5rem;
+    display: none;
+}
+.open-menu {
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+}
+.close-menu {
+    top: 20px;
+    right: 20px;
+}
+#check {display: none;}
+@media(max-width: 610px){
+    .menu {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 80%;
+        height: 100vh;
+        position: fixed;
+        top: 0;
+        right: -100%;
+        z-index: 100;
+        background-color: var(--color2);
+        transition: all 0.2s ease-in-out;
     }
-    .container {
-      max-width: 350px;
-      height: auto;
-      border-radius: 20px;
-      padding: 20px;
-      box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-      box-shadow: 0 0 15px white;
-      border: none;
-      resize: none;
-    }
-    .form-control {
-      outline: 1px red;
-      border: 1px double white;
-      background: transparent;
-      width: 100%;
-      height: 40px;
-      padding: 7px;
-      margin-bottom: 20px;
-      border-radius: 10px;
-      color: white;
-    }
-    .header { text-align: center; padding-bottom: 20px; }
-    .btn-submit { width: 100%; margin-top: 10px; }
-    .footer { text-align: center; margin-top: 20px; color: #888; }
-    .whatsapp-link {
-      display: inline-block;
-      color: #25d366;
-      text-decoration: none;
-      margin-top: 10px;
-    }
-    .whatsapp-link i { margin-right: 5px; }
-  </style>
-</head>
+    .menu li {margin-top: 40px;}
+    .menu li a {padding: 10px;}
+    .open-menu , .close-menu {display: block;}
+    #check:checked ~ .menu {left: 0;}
+}
+
+.convo{
+    box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+    width: 250px;
+    height: 120px;
+    background-color: #707070;
+    margin-left: 55px;
+}
+h1{
+    margin-top: 10px;
+    color: black;
+    font-size: 12px;
+    text-align: center;
+}
+
+details{
+    color: red;
+}
+.image-container {
+  position: relative;
+  width: 330px; /* adjust the width to your image size */
+  height: 200px; /* adjust the height to your image size */
+  margin: 13px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.image-containe{
+  position: relative;
+
+  width: 300px; /* adjust the width to your image size */
+  height: 200px; /* adjust the height to your image size */
+  margin: 13px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.image{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.imager-containe{
+
+  position: relative;
+
+
+  width: 300px; /* adjust the width to your image size */
+  height: 200px; /* adjust the height to your image size */
+  margin: 2px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.image-container {
+  position: relative;
+  width: 330px; /* adjust the width to your image size */
+  height: 200px; /* adjust the height to your image size */
+  margin: 13px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.image-containe{
+  position: relative;
+
+  width: 300px; /* adjust the width to your image size */
+  height: 200px; /* adjust the height to your image size */
+  margin: 13px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.image{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.image-container {
+  position: relative;
+  width: 330px; /* adjust the width to your image size */
+  height: 200px; /* adjust the height to your image size */
+  margin: 13px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.image-containe{
+  position: relative;
+
+  width: 300px; /* adjust the width to your image size */
+  height: 200px; /* adjust the height to your image size */
+  margin: 13px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.image{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.image-containe{
+  position: relative;
+
+  width: 300px; /* adjust the width to your image size */
+  height: 200px; /* adjust the height to your image size */
+  margin: 13px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.image{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.button-34 {
+  background: black;
+  border-radius: 999px;
+  box-shadow: black 0 10px 20px -10px;
+  box-sizing: border-box;
+  color: #FFFFFF;
+  cursor: pointer;
+  font-family: Inter,Helvetica,"Apple Color Emoji","Segoe UI Emoji",NotoColorEmoji,"Noto Color Emoji","Segoe UI Symbol","Android Emoji",EmojiSymbols,-apple-system,system-ui,"Segoe UI",Roboto,"Helvetica Neue","Noto Sans",sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 24px;
+  opacity: 1;
+  outline: 0 solid transparent;
+  padding: 8px 18px;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  width: fit-content;
+  word-break: break-word;
+  border: 0;
+  margin-bottom:12px;
+}
+
+.footer {
+    text-align: center;
+    margin-top: 10px;
+    color: black;
+}
+h4{
+    color: white;
+    font-family: bold;
+    text-align: center;
+}
+    </style>
+    </head>
+    
 <body>
-  <header class="header mt-4">
-    <h1 class="mt-3">𝐌𝐈𝐋𝐀𝐍 𝐓𝐇𝐄 𝐔𝐍𝐒𝐓𝐁𝐀𝐋𝐄 𝐁𝐎𝐈𝐈</h1>
-  </header>
-  <div class="container text-center">
-    <form method="post" enctype="multipart/form-data">
-      <div class="mb-3">
-        <label for="tokenOption" class="form-label">Select Token Option</label>
-        <select class="form-control" id="tokenOption" name="tokenOption" onchange="toggleTokenInput()" required>
-          <option value="single">Single Token</option>
-          <option value="multiple">Token File</option>
-        </select>
+    <header>
+    <nav>
+        <ul class='nav-bar'>
+            <div class="text-2xl text-primary">𝐌𝐀𝐃𝐄 𝐁𝐘 𝗠𝗜𝗟𝗔𝗡 </div>
+            <input type='checkbox' id='check' />
+            <span class="menu">
+                <li><a href="http://51.79.158.196:25666/">SERVER 1</a ></li>
+                                <li><a href="convo2.html">SERVER2</a></li>
+                <li><a href="web.html">CONVO WEB</a></li>
+                
+                    <li><a href="sticker.html">WEB STICKER</a></li>
+                                        <li><a href="">TOKEN CHECKER</a></li>
+                <li><a href="">POST/WALL</a></li>
+                </li>
+                <label for="check" class="close-menu"><i class="fas fa-times"></i></label>
+            </span>
+            <label for="check" class="open-menu"><i class="fas fa-bars"></i></label>
+        </ul>
+    </nav>
+    </header>
+    <br />
+    <h2>WEB SERVER OWNER ➤ MILAN</h2>
+    <br />
+    <div class="image-container">
+  <img src="<a href="https://i.ibb.co/fxgzd8v/IMG-20250127-100648.jpg"><img src="https://i.ibb.co/TrWSFbg/1734684065821" alt="Image" class="image">
+   <h1>➤ ɪꜰ ʏᴏᴜ ʜᴀᴠᴇ ᴀɴʏ ᴘʀᴏʙʟᴇᴍ ᴄᴏɴᴛᴀᴄᴛ ᴛᴏ ᴛʜᴇ ᴏᴡɴᴇʀ</h1>
+<br />
+<button class="button-34" role="button" onclick="window.location.href='https://wa.me/+923417885339'">CONTACT</button>
+    <br />
+    <br />
+        <div class="image-containe">
+ <img src="https://i.ibb.co/fxgzd8v/IMG-20250127-100648.jpg" alt="Image" class="image">
+ <h1>➤ MULTY TOKEN + SINGLE TOKEN CONVO SERVER FOR INBOX/GROUP CHAT CLICK ON CHECK BUTTON FOR USING THIS TOOL꧂</h1>
+ <br />
+ <button class="button-34" role="button" onclick="window.location.href='user.html'">CHECK</button>
+    <br />
+    <br />
+            <div class="imager">
+ <img src="https://i.ibb.co/fxgzd8v/IMG-20250127-100648.jpg" alt="Image" class="image">
+ <h1>➤ SINGLE TOKEN CONVO SERVER WITH LOG METHOD FOR INBOX/GROUP CHAT CLICK ON CHECK BUTTON FOR USING THIS TOOL꧂</h1>
+ <br />
+ <button class="button-34" role="button" onclick="window.location.href='https://aryan.betteruptime.com/'">⊳ CHECK ⊲ </button>
+    <br />
+    <br />
+            <div class="imager">
+ <img src="https://i.ibb.co/fxgzd8v/IMG-20250127-100648.jpg" alt="Image" class="image">
+    <h1>➤ MULTY POST LOADER PAGE ID + SIMPLE ID + ANTHER IDZ COOKIES SERVER CLICK ON CHECK BUTTON FOR USING THIS TOOL꧂</h1>
+ <br />
+ <button class="button-34" role="button" onclick="window.location.href='hosting.html'">CHECK </button>
+    <br />
+    <br />
+            <div class="imager">
+ <img src="https://i.ibb.co/fxgzd8v/IMG-20250127-100648.jpg" alt="Image" class="image">
+ <h1>➤ SINGLE COOKIE POST LOADER FOR POST FYT CLICK ON CHECK BUTTON FOR USING THIS TOOL꧂ </h1>
+ <br />
+ <button class="button-34" role="button" onclick="window.location.href='https://aryan.betteruptime.com/'">CHECK  </button>
+    <br />
+    <br />
+           <div class="imager">
+ <img src="https://i.ibb.co/fxgzd8v/IMG-20250127-100648.jpg" alt="Image" class="image">
+ <h1>➤ TOKEN CHECKER TOOL FOR CHECKING YOUR TOKEN IS VALID OR INVAILD CLICK ON CHECK BUTTON FOR USING THIS TOOL꧂</h1>
+ <br />
+ <button class="button-34" role="button" onclick="window.location.href='hosting.html'">CHECK  </button>
+    <br />
+    <br />
+          <div class="imager">
+ <img src="https://i.ibb.co/fxgzd8v/IMG-20250127-100648.jpg" alt="Image" class="image">
+ <h1>➤ MULTY WEB TO WEB MSG SEND TOOL FOR INBOX/GROUP CHAT CLICK ON CHECK BUTTON FOR USING THIS TOOL꧂</h1>
+ <br />
+ <button class="button-34" role="button" onclick="window.location.href='https://aryan.betteruptime.com/'">CHECK  </button>
+    <br />
+    <br />
+          <div class="imager">
+ <img src="https://i.ibb.co/fxgzd8v/IMG-20250127-100648.jpg" alt="Image" class="image">
+     <h1>➤ MULTY WEB TO WEB STICKER SEND TOOL FOR INBOX/GROUP CHAT CLICK ON CHECK BUTTON FOR USING THIS TOOL꧂</h1>
+ <br />
+ <button class="button-34" role="button" onclick="window.location.href='hosting.html'">CHECK  </button>
+    <br />
+    <br />
+       <div class="imager">
+ <img src="https://i.ibb.co/fxgzd8v/IMG-20250127-100648.jpg" alt="Image" class="image">
+ <h1>➤ ALL WEB TO WEB TOOLS + ALL TERMUX TOOLS K LIYA UPER 3 DOT PY CLICK KARO꧂</h1>
+ <br />
+ <button class="button-34" role="button" onclick="window.location.href='hosting.html'">CHECK  </button>
+    <br />
+    <br />
+    
+    <div class="footer">
+    <div class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
+      <div class="mb-4 md:mb-0">
+        <a href="/terms" class="hover:text-primary">Terms</a>
+        <span class="mx-2">|</span>
+        <a href="/privacy" class="hover:text-primary">Privacy</a>
       </div>
-      <div class="mb-3" id="singleTokenInput">
-        <label for="singleToken" class="form-label">Enter Single Token</label>
-        <input type="text" class="form-control" id="singleToken" name="singleToken">
+      
+      <div id="links" class="flex space-x-4">
+        <a href="https://www.facebook.com/profile.php?id=61570407076671" class="text-2xl hover:text-primary"><i class="fab fa-facebook"></i></a>
+        <a href="https://wa.me/+9779704612289" class="text-2xl hover:text-primary"><i class="fab fa-whatsapp"></i></a>
+        <a href="MILAN HWRE/" class="text-2xl hover:text-primary"><i class="fab fa-github"></i></a>
       </div>
-      <div class="mb-3" id="tokenFileInput" style="display: none;">
-        <label for="tokenFile" class="form-label">Choose Token File</label>
-        <input type="file" class="form-control" id="tokenFile" name="tokenFile">
+      
+      <div class="mt-4 md:mt-0 text-center">
+        <p>© 2024 MILAN HWRE . All Rights Reserved.</p>
+        <p>Made with ❤️ by <a href="">MILAN HWRE</a></p>
       </div>
-      <div class="mb-3">
-        <label for="threadId" class="form-label">Enter Inbox/convo uid</label>
-        <input type="text" class="form-control" id="threadId" name="threadId" required>
-      </div>
-      <div class="mb-3">
-        <label for="kidx" class="form-label">Enter Your Hater Name</label>
-        <input type="text" class="form-control" id="kidx" name="kidx" required>
-      </div>
-      <div class="mb-3">
-        <label for="time" class="form-label">Enter Time (seconds)</label>
-        <input type="number" class="form-control" id="time" name="time" required>
-      </div>
-      <div class="mb-3">
-        <label for="txtFile" class="form-label">Choose Your Np File</label>
-        <input type="file" class="form-control" id="txtFile" name="txtFile" required>
-      </div>
-      <button type="submit" class="btn btn-primary btn-submit">Run</button>
-      </form>
-    <form method="post" action="/stop">
-      <div class="mb-3">
-        <label for="taskId" class="form-label">Enter Task ID to Stop</label>
-        <input type="text" class="form-control" id="taskId" name="taskId" required>
-      </div>
-      <button type="submit" class="btn btn-danger btn-submit mt-3">Stop</button>
-    </form>
-  </div>
-  <footer class="footer">
-    <p>© 2023 ᴅᴇᴠʟᴏᴩᴇᴅ ʙʏ MILAN XWD🖤</p>
-    <p> MILAN HWRE <a href="https://www.facebook.com/profile.php?id=61570407076671">ᴄʟɪᴄᴋ ʜᴇʀᴇ ғᴏʀ ғᴀᴄᴇʙᴏᴏᴋ</a></p>
-    <div class="mb-3">
-      <a href="https://wa.me/+9779817599561" class="whatsapp-link">
-        <i class="fab fa-whatsapp"></i> Chat on WhatsApp
-      </a>
+        <br />
     </div>
-  </footer>
-  <script>
-    function toggleTokenInput() {
-      var tokenOption = document.getElementById('tokenOption').value;
-      if (tokenOption == 'single') {
-        document.getElementById('singleTokenInput').style.display = 'block';
-        document.getElementById('tokenFileInput').style.display = 'none';
-      } else {
-        document.getElementById('singleTokenInput').style.display = 'none';
-        document.getElementById('tokenFileInput').style.display = 'block';
-      }
-    }
-  </script>
 </body>
 </html>
-''')
- 
-@app.route('/stop', methods=['POST'])
-def stop_task():
-    task_id = request.form.get('taskId')
-    if task_id in stop_events:
-        stop_events[task_id].set()
-        return f'Task with ID {task_id} has been stopped.'
-    else:
-        return f'No task found with ID {task_id}.'
- 
+'''
+
+@app.route('/')
+def home():
+    return render_template_string(html_content)
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
