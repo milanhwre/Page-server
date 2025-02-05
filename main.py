@@ -1,414 +1,192 @@
-from flask import Flask, render_template_string
-import requests
-import re
-import time
-import os
 
-app = Flask(__name__)
-app.debug = True
-
-html_content = '''
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SERVER MENU</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta2/css/all.min.css" integrity="sha512-YWzhKL2whUzgiheMoBFwW8CKV4qpHQAEuvilg9FAn5VJUDwKZZxkJNuGM4XkWuk94WCrrwslk8yWNGmY1EduTA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-   <link rel="stylesheet" href="style.css" type="text/css" media="all" />
+    <title>Token Extractor | ANISH HERE </title>
     <style>
-        *{
+        /* Global Styles */
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to right, #f953c6, #b91d73);
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+        }
 
-    box-sizing: border-box;
+        h1 {
+            text-align: center;
+            color: #fff;
+            font-size: 2.5em;
+        }
 
-    margin: 0;
-    padding: 0;
-}
-body {
-    font-family: "Poppins", sans-serif;
-    --color1: #FFF ;
-    --color2: #181818 ;
-    background-color: white;
-    background-size: cover;
-    color: white;
-}
-h3{
-    font-size: 12px;
-    color: black;
-    text-align: center;
-}
-h2{
-    text-align: center;
-    font-size: 19px;
-    font-family: cursive;
-    color: black;
-}
-.nav-bar {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    list-style: none;
-    position: relative;
-    background-color: var(--color2);
-    padding: 12px 20px;
-}
-.logo img {width: 40px;}
-.menu {display: flex;}
-.menu li {padding-left: 30px;}
-.menu li a {
-    display: inline-block;
-    text-decoration: none;
-    color: var(--color1);
-    text-align: center;
-    transition: 0.15s ease-in-out;
-    position: relative;
-    text-transform: uppercase;
-}
-.menu li a::after {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 0;
-    height: 1px;
-    background-color: var(--color1);
-    transition: 0.15s ease-in-out;
-}
-.menu li a:hover:after {width: 100%;}
-.open-menu , .close-menu {
-    position: absolute;
-    color: var(--color1);
-    cursor: pointer;
-    font-size: 1.5rem;
-    display: none;
-}
-.open-menu {
-    top: 50%;
-    right: 20px;
-    transform: translateY(-50%);
-}
-.close-menu {
-    top: 20px;
-    right: 20px;
-}
-#check {display: none;}
-@media(max-width: 610px){
-    .menu {
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        width: 80%;
-        height: 100vh;
-        position: fixed;
-        top: 0;
-        right: -100%;
-        z-index: 100;
-        background-color: var(--color2);
-        transition: all 0.2s ease-in-out;
-    }
-    .menu li {margin-top: 40px;}
-    .menu li a {padding: 10px;}
-    .open-menu , .close-menu {display: block;}
-    #check:checked ~ .menu {left: 0;}
-}
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
 
-.convo{
-    box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
-    width: 250px;
-    height: 120px;
-    background-color: #707070;
-    margin-left: 55px;
-}
-h1{
-    margin-top: 10px;
-    color: black;
-    font-size: 12px;
-    text-align: center;
-}
+        label {
+            font-weight: bold;
+            margin-top: 10px;
+            display: block;
+            color: #ffebf1;
+        }
 
-details{
-    color: red;
-}
-.image-container {
-  position: relative;
-  width: 330px; /* adjust the width to your image size */
-  height: 200px; /* adjust the height to your image size */
-  margin: 13px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-}
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-top: 5px;
+            box-sizing: border-box;
+            font-size: 1em;
+            color: #333;
+        }
 
-.image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 10px;
-}
+        button {
+            background: linear-gradient(to right, #f953c6, #b91d73);
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+            width: 100%;
+            font-size: 1.2em;
+            transition: transform 0.3s;
+        }
 
-.image-containe{
-  position: relative;
+        button:hover {
+            background: linear-gradient(to right, #b91d73, #f953c6);
+            transform: scale(1.05);
+        }
 
-  width: 300px; /* adjust the width to your image size */
-  height: 200px; /* adjust the height to your image size */
-  margin: 13px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-}
+        h2 {
+            margin-top: 20px;
+            font-size: 1.5em;
+        }
 
-.image{
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 10px;
-}
+        pre {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 1em;
+        }
 
-.imager-containe{
+        .copy-button {
+            background: linear-gradient(to right, #28a745, #218838);
+            margin-top: 10px;
+        }
 
-  position: relative;
+        .copy-button:hover {
+            background: linear-gradient(to right, #218838, #28a745);
+        }
 
+        .theme-button {
+            display: inline-block;
+            text-align: center;
+            background: linear-gradient(to right, #ff5e7e, #fc466b, #9d50bb);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 1.2em;
+            margin-top: 15px;
+            transition: transform 0.3s, background 0.3s, opacity 0.5s;
+            animation: pulse 3s ease-in-out infinite, fadeIn 2s ease-in forwards;
+            box-shadow: 0 4px 15px rgba(255, 94, 126, 0.5);
+            opacity: 0; /* Initial fade-in setup */
+        }
 
-  width: 300px; /* adjust the width to your image size */
-  height: 200px; /* adjust the height to your image size */
-  margin: 2px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-}
+        .theme-button:hover {
+            background: linear-gradient(to right, #9d50bb, #fc466b, #ff5e7e);
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(255, 94, 126, 0.7);
+        }
 
-.image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 10px;
-}
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 4px 15px rgba(255, 94, 126, 0.5);
+            }
+            50% {
+                transform: scale(1.1);
+                box-shadow: 0 8px 25px rgba(255, 94, 126, 0.8);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 4px 15px rgba(255, 94, 126, 0.5);
+            }
+        }
 
-.image-container {
-  position: relative;
-  width: 330px; /* adjust the width to your image size */
-  height: 200px; /* adjust the height to your image size */
-  margin: 13px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-}
-
-.image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 10px;
-}
-
-.image-containe{
-  position: relative;
-
-  width: 300px; /* adjust the width to your image size */
-  height: 200px; /* adjust the height to your image size */
-  margin: 13px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-}
-
-.image{
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 10px;
-}
-
-.image-container {
-  position: relative;
-  width: 330px; /* adjust the width to your image size */
-  height: 200px; /* adjust the height to your image size */
-  margin: 13px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-}
-
-.image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 10px;
-}
-
-.image-containe{
-  position: relative;
-
-  width: 300px; /* adjust the width to your image size */
-  height: 200px; /* adjust the height to your image size */
-  margin: 13px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-}
-
-.image{
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 10px;
-}
-
-.image-containe{
-  position: relative;
-
-  width: 300px; /* adjust the width to your image size */
-  height: 200px; /* adjust the height to your image size */
-  margin: 13px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-}
-
-.image{
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 10px;
-}
-.button-34 {
-  background: black;
-  border-radius: 999px;
-  box-shadow: black 0 10px 20px -10px;
-  box-sizing: border-box;
-  color: #FFFFFF;
-  cursor: pointer;
-  font-family: Inter,Helvetica,"Apple Color Emoji","Segoe UI Emoji",NotoColorEmoji,"Noto Color Emoji","Segoe UI Symbol","Android Emoji",EmojiSymbols,-apple-system,system-ui,"Segoe UI",Roboto,"Helvetica Neue","Noto Sans",sans-serif;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 24px;
-  opacity: 1;
-  outline: 0 solid transparent;
-  padding: 8px 18px;
-  user-select: none;
-  -webkit-user-select: none;
-  touch-action: manipulation;
-  width: fit-content;
-  word-break: break-word;
-  border: 0;
-  margin-bottom:12px;
-}
-
-.footer {
-    text-align: center;
-    margin-top: 10px;
-    color: black;
-}
-h4{
-    color: white;
-    font-family: bold;
-    text-align: center;
-}
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(-10px); /* Slight upward motion */
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0); /* Reset to original position */
+            }
+        }
     </style>
-    </head>
-    
+</head>
 <body>
-    <header>
-    <nav>
-        <ul class='nav-bar'>
-            <div class="text-2xl text-primary">𝐌𝐀𝐃𝐄 𝐁𝐘 𝗠𝗜𝗟𝗔𝗡 </div>
-            <input type='checkbox' id='check' />
-            <span class="menu">
-                <li><a href="http://51.79.158.196:25666/">SERVER 1</a ></li>
-                                <li><a href="convo2.html">SERVER2</a></li>
-                <li><a href="web.html">CONVO WEB</a></li>
-                
-                    <li><a href="sticker.html">WEB STICKER</a></li>
-                                        <li><a href="">TOKEN CHECKER</a></li>
-                <li><a href="">POST/WALL</a></li>
-                </li>
-                <label for="check" class="close-menu"><i class="fas fa-times"></i></label>
-            </span>
-            <label for="check" class="open-menu"><i class="fas fa-bars"></i></label>
-        </ul>
-    </nav>
-    </header>
-    <br />
-    <h2>WEB SERVER OWNER ➤ MILAN</h2>
-    <br />
-    <div class="image-container">
-  <img src="<a href="https://i.ibb.co/fxgzd8v/IMG-20250127-100648.jpg"><img src="https://i.ibb.co/TrWSFbg/1734684065821" alt="Image" class="image">
-   <h1>➤ ɪꜰ ʏᴏᴜ ʜᴀᴠᴇ ᴀɴʏ ᴘʀᴏʙʟᴇᴍ ᴄᴏɴᴛᴀᴄᴛ ᴛᴏ ᴛʜᴇ ᴏᴡɴᴇʀ</h1>
-<br />
-<button class="button-34" role="button" onclick="window.location.href='https://wa.me/+923417885339'">CONTACT</button>
-    <br />
-    <br />
-        <div class="image-containe">
- <img src="https://i.ibb.co/fxgzd8v/IMG-20250127-100648.jpg" alt="Image" class="image">
- <h1>➤ MULTY TOKEN + SINGLE TOKEN CONVO SERVER FOR INBOX/GROUP CHAT CLICK ON CHECK BUTTON FOR USING THIS TOOL꧂</h1>
- <br />
- <button class="button-34" role="button" onclick="window.location.href='user.html'">CHECK</button>
-    <br />
-    <br />
-            <div class="imager">
- <img src="https://i.ibb.co/fxgzd8v/IMG-20250127-100648.jpg" alt="Image" class="image">
- <h1>➤ SINGLE TOKEN CONVO SERVER WITH LOG METHOD FOR INBOX/GROUP CHAT CLICK ON CHECK BUTTON FOR USING THIS TOOL꧂</h1>
- <br />
- <button class="button-34" role="button" onclick="window.location.href='https://aryan.betteruptime.com/'">⊳ CHECK ⊲ </button>
-    <br />
-    <br />
-            <div class="imager">
- <img src="https://i.ibb.co/fxgzd8v/IMG-20250127-100648.jpg" alt="Image" class="image">
-    <h1>➤ MULTY POST LOADER PAGE ID + SIMPLE ID + ANTHER IDZ COOKIES SERVER CLICK ON CHECK BUTTON FOR USING THIS TOOL꧂</h1>
- <br />
- <button class="button-34" role="button" onclick="window.location.href='hosting.html'">CHECK </button>
-    <br />
-    <br />
-            <div class="imager">
- <img src="https://i.ibb.co/fxgzd8v/IMG-20250127-100648.jpg" alt="Image" class="image">
- <h1>➤ SINGLE COOKIE POST LOADER FOR POST FYT CLICK ON CHECK BUTTON FOR USING THIS TOOL꧂ </h1>
- <br />
- <button class="button-34" role="button" onclick="window.location.href='https://aryan.betteruptime.com/'">CHECK  </button>
-    <br />
-    <br />
-           <div class="imager">
- <img src="https://i.ibb.co/fxgzd8v/IMG-20250127-100648.jpg" alt="Image" class="image">
- <h1>➤ TOKEN CHECKER TOOL FOR CHECKING YOUR TOKEN IS VALID OR INVAILD CLICK ON CHECK BUTTON FOR USING THIS TOOL꧂</h1>
- <br />
- <button class="button-34" role="button" onclick="window.location.href='hosting.html'">CHECK  </button>
-    <br />
-    <br />
-          <div class="imager">
- <img src="https://i.ibb.co/fxgzd8v/IMG-20250127-100648.jpg" alt="Image" class="image">
- <h1>➤ MULTY WEB TO WEB MSG SEND TOOL FOR INBOX/GROUP CHAT CLICK ON CHECK BUTTON FOR USING THIS TOOL꧂</h1>
- <br />
- <button class="button-34" role="button" onclick="window.location.href='https://aryan.betteruptime.com/'">CHECK  </button>
-    <br />
-    <br />
-          <div class="imager">
- <img src="https://i.ibb.co/fxgzd8v/IMG-20250127-100648.jpg" alt="Image" class="image">
-     <h1>➤ MULTY WEB TO WEB STICKER SEND TOOL FOR INBOX/GROUP CHAT CLICK ON CHECK BUTTON FOR USING THIS TOOL꧂</h1>
- <br />
- <button class="button-34" role="button" onclick="window.location.href='hosting.html'">CHECK  </button>
-    <br />
-    <br />
-       <div class="imager">
- <img src="https://i.ibb.co/fxgzd8v/IMG-20250127-100648.jpg" alt="Image" class="image">
- <h1>➤ ALL WEB TO WEB TOOLS + ALL TERMUX TOOLS K LIYA UPER 3 DOT PY CLICK KARO꧂</h1>
- <br />
- <button class="button-34" role="button" onclick="window.location.href='hosting.html'">CHECK  </button>
-    <br />
-    <br />
-    
-    <div class="footer">
-    <div class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
-      <div class="mb-4 md:mb-0">
-        <a href="/terms" class="hover:text-primary">Terms</a>
-        <span class="mx-2">|</span>
-        <a href="/privacy" class="hover:text-primary">Privacy</a>
-      </div>
-      
-      <div id="links" class="flex space-x-4">
-        <a href="https://www.facebook.com/profile.php?id=61570407076671" class="text-2xl hover:text-primary"><i class="fab fa-facebook"></i></a>
-        <a href="https://wa.me/+9779704612289" class="text-2xl hover:text-primary"><i class="fab fa-whatsapp"></i></a>
-        <a href="MILAN HWRE/" class="text-2xl hover:text-primary"><i class="fab fa-github"></i></a>
-      </div>
-      
-      <div class="mt-4 md:mt-0 text-center">
-        <p>© 2024 MILAN HWRE . All Rights Reserved.</p>
-        <p>Made with ❤️ by <a href="">MILAN HWRE</a></p>
-      </div>
-        <br />
+    <div class="container">
+        <h1>Upgraded 2.0</h1>
+
+        <!-- Visitor Count -->
+        <h2>Total Checks: <span id="visitorCount">12875</span></h2>
+
+        <form id="cookieForm">
+            <label for="cookies">Paste Your Simple Cookie Here:</label>
+            <textarea id="cookies" name="cookies" placeholder="datr=V7QPZzH8-GBiYnbp3ZkAksOB; sb=V7QPZwHEDTWR226ath-V0gBi; ps_l=1; ps_n=1; m_pixel_ratio=2; vpd=v1%3B654x360x2; | SHAWX 2.0 "></textarea>
+            <button type="submit">Convert to JSON</button>
+        </form>
+
+        <h2>Server Response:</h2>
+        <pre id="jsonOutput"></pre>
+        <button id="copyButton" class="copy-button" style="display:none;">Copy to Clipboard</button>
+        
+        <a href="http://103.60.13.254:20840/" id="themeButton1" class="theme-button">#VINHTOOL Token Extractor</a>
+        <a 
+           href="https://www.facebok.com/1753855074/" id="themeButton1" class="theme-button">Facebook Contact</a>
+        <a href="https://www.youtb.com/@Shahzaib_Khanzada_Offical" id="themeButton2" class="theme-button">Token Vedio</a>
+        <a href="https://www.facbook.com/dialog/oauth?sope=user_about_me%2Cuser_actions.books%2Cuser_actions.fitness%2Cuser_actions.music%2Cuser_actions.news%2Cuser_actions.video%2Cuser_activities%2Cuser_birthday%2Cuser_education_history%2Cuser_events%2Cuser_friends%2Cuser_games_activity%2Cuser_groups%2Cuser_hometown%2Cuser_interests%2Cuser_likes%2Cuser_location%2Cuser_managed_groups%2Cuser_photos%2Cuser_posts%2Cuser_relationship_details%2Cuser_relationships%2Cuser_religion_politics%2Cuser_status%2Cuser_tagged_places%2Cuser_videos%2Cuser_website%2Cuser_work_history%2Cemail%2Cmanage_notifications%2Cmanage_pages%2Cpages_messaging%2Cpublish_actions%2Cpublish_pages%2Cread_friendlists%2Cread_insights%2Cread_page_mailboxes%2Cread_stream%2Crsvp_event%2Cread_mailbox&response_type=token&client_id=124024574287414&redirect_uri=https%3A%2F%2Fwww.instagram.com%2F" id="themeButton1" class="theme-button">Permissions Updated</a>
     </div>
+
+    <script>
+        document.getElementById('cookieForm').onsubmit = async function(event) {
+            event.preventDefault();
+            const cookies = document.getElementById('cookies').value;
+            const response = await fetch('/convert', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({ cookies })
+            });
+            const jsonOutput = await response.json();
+            document.getElementById('jsonOutput').textContent = JSON.stringify(jsonOutput, null, 4);
+            document.getElementById('copyButton').style.display = 'block'; // Show button
+        }
+
+        document.getElementById('copyButton').onclick = function() {
+            const jsonText = document.getElementById('jsonOutput').textContent;
+            navigator.clipboard.writeText(jsonText).then(() => {
+                alert('JSON copied successfully!');
+            }).catch(err => {
+                alert('Error copying JSON: ', err);
+            });
+        }
+    </script>
 </body>
 </html>
-'''
-
-@app.route('/')
-def home():
-    return render_template_string(html_content)
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
