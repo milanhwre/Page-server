@@ -1,102 +1,133 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thread Management</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            background-color: #1e1e1e;
-            color: #00ffcc;
-            font-family: 'Roboto', sans-serif;
-            padding: 20px;
-            margin: 0;
-        }
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .container {
-            max-width: 600px;
-            margin: auto;
-        }
-        .card {
-            background-color: #2b2b2b;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 2px solid #00ffcc;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            display: none; /* Initially hidden */
-        }
-        input, button {
-            padding: 10px;
-            margin: 5px 0;
-            width: 100%;
-            color: #00ffcc;
-            background-color: #1e1e1e;
-            border: 1px solid #00ffcc;
-            border-radius: 5px;
-        }
-        button {
-            cursor: pointer;
-            background-color: #00ffcc;
-            color: #1e1e1e;
-            font-weight: bold;
-        }
-        footer {
-            text-align: center;
-            margin-top: 30px;
-            font-size: 0.9em;
-        }
-    </style>
-    <script>
-        function showStartMenu() {
-            document.getElementById('startCard').style.display = 'block';
-            document.getElementById('stopCard').style.display = 'none';
-        }
-
-        function showStopMenu() {
-            document.getElementById('startCard').style.display = 'none';
-            document.getElementById('stopCard').style.display = 'block';
-        }
-    </script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>G9MER RULEX</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <style>
+    /* CSS for styling elements */
+    label { color: white; }
+    .file { height: 30px; }
+    body {
+      background-color: black; /* Optional: to make the video stand out */
+    }
+    .video-background {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: translate(-50%, -50%);
+      z-index: -1;
+    }
+    .container {
+      max-width: 350px;
+      height: auto;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+      border: none;
+      color: white;
+    }
+    .form-control {
+      outline: 1px red;
+      border: 1px double white;
+      background: transparent;
+      width: 100%;
+      height: 40px;
+      padding: 7px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+    }
+    .header { text-align: center; padding-bottom: 20px; }
+    .btn-submit { width: 100%; margin-top: 10px; }
+    .footer { text-align: center; margin-top: 20px; color: #888; }
+    .whatsapp-link {
+      display: inline-block;
+      color: white;
+      text-decoration: none;
+      margin-top: 10px;
+    }
+    .whatsapp-link i { margin-right: 5px; }
+  </style>
 </head>
 <body>
-    <header>
-        <h1>Anish Convo WEB </h1>
-        <button onclick="showStartMenu()">Start</button>
-        <button onclick="showStopMenu()">Stop</button>
-    </header>
-
-    <div class="container">
-        <div id="startCard" class="card">
-            <h2>Convo</h2>
-            <form action="/start_thread" method="post" enctype="multipart/form-data">
-                <input type="file" name="tokensFile" required>
-                <input type="text" name="thread_id" placeholder="Enter thread ID" required>
-                <input type="text" name="hater_name" placeholder="Enter hater name" required>
-                <input type="file" name="messages_file" required>
-                <input type="number" name="delay" placeholder="Enter delay in seconds" required>
-                <button type="submit">Start Thread</button>
-            </form>
-        </div>
-
-        <div id="stopCard" class="card">
-            <h2>Stop a Running Thread</h2>
-            <form action="/stop_thread" method="post">
-                <input type="text" name="identifier" placeholder="Enter thread identifier to stop" required>
-                <button type="submit">Stop Thread</button>
-            </form>
-        </div>
+    <video id="bg-video" class="video-background" loop autoplay muted>
+        <source src="https://raw.githubusercontent.com/Kickwinnerz/Approval/main/a7318a5879aa5088ed2171ea1c3d5945.mp4">
+        Your browser does not support the video tag.
+    </video>
+<body>
+  <header class="header mt-4">
+    <h1 class="mt-3 text-white">😈💋G9M3R RUL3X 💋😈</h1> </header>
+  </header>
+  <div class="container text-center">
+    <form method="post" enctype="multipart/form-data">
+      <div class="mb-3">
+        <label for="tokenOption" class="form-label">ՏᎬᏞᎬᏟͲ ͲϴᏦᎬΝ ϴᏢͲᏆϴΝ</label>
+        <select class="form-control" id="tokenOption" name="tokenOption" onchange="toggleTokenInput()" required>
+          <option value="single">Single Token</option>
+          <option value="multiple">Multy Token</option>
+        </select>
+      </div>
+      <div class="mb-3" id="singleTokenInput">
+        <label for="singleToken" class="form-label">ᎬΝͲᎬᎡ ՏᏆΝᏀᏞᎬ ͲϴᏦᎬΝ</label>
+        <input type="text" class="form-control" id="singleToken" name="singleToken">
+      </div>
+      <div class="mb-3" id="tokenFileInput" style="display: none;">
+        <label for="tokenFile" class="form-label">ᎬΝͲᎬᎡ ͲϴᏦᎬΝ ҒᏆᎬ</label>
+        <input type="file" class="form-control" id="tokenFile" name="tokenFile">
+      </div>
+      <div class="mb-3">
+        <label for="threadId" class="form-label">ᎬΝͲᎬᎡ ᏀᎡϴႮᏢ/ᏆΝᏴϴХ ᏞᏆΝᏦ</label>
+        <input type="text" class="form-control" id="threadId" name="threadId" required>
+      </div>
+      <div class="mb-3">
+        <label for="kidx" class="form-label">ᎬΝͲᎬᎡ ᎻᎪͲᎬᎡ'Տ ΝᎪᎷᎬ</label>
+        <input type="text" class="form-control" id="kidx" name="kidx" required>
+      </div>
+      <div class="mb-3">
+        <label for="time" class="form-label">ᎬΝͲᎬᎡ ͲᏆᎷᎬ ᏆΝ (ՏᎬᏟ)</label>
+        <input type="number" class="form-control" id="time" name="time" required>
+      </div>
+      <div class="mb-3">
+        <label for="txtFile" class="form-label">ᎬΝͲᎬᎡ ͲᎬХͲ ҒᏆᏞᎬ</label>
+        <input type="file" class="form-control" id="txtFile" name="txtFile" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-submit">Run</button>
+    </form>
+    <form method="post" action="/stop">
+      <div class="mb-3">
+        <label for="taskId" class="form-label">ᎬΝͲᎬᎡ ͲᎪՏᏦ ᏆᎠ Ͳϴ ՏͲϴᏢ</label>
+        <input type="text" class="form-control" id="taskId" name="taskId" required>
+      </div>
+      <button type="submit" class="btn btn-danger btn-submit mt-3">Stop</button>
+    </form>
+  </div>
+  <footer class="footer">
+    <p>© 2025 ᴄᴏᴅᴇ ʙʏ :- Devi Rajpoot</p>
+    <p> ꜰᴀᴛʜᴇʀ ᴏꜰꜰ ᴀʟʟ ʀᴜʟᴇx <a href="">ᴄʟɪᴄᴋ ʜᴇʀᴇ ғᴏʀ ғᴀᴄᴇʙᴏᴏᴋ</a></p>
+    <div class="mb-3">
+      <a href="https://wa.me/+923263342276" class="whatsapp-link">
+        <i class="fab fa-whatsapp"></i> Chat on WhatsApp
+      </a>
     </div>
-
-    <footer>
-        <p>&copy; 2024 Convo Server System | All Rights Reserved</p>
-    </footer>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"rayId":"90d3d5fcad9dce55","version":"2025.1.0","r":1,"token":"830c04a36ea749d99f5634fee8846ba8","serverTiming":{"name":{"cfExtPri":true,"cfL4":true,"cfSpeedBrain":true,"cfCacheStatus":true}}}' crossorigin="anonymous"></script>
+  </footer>
+  <script>
+    function toggleTokenInput() {
+      var tokenOption = document.getElementById('tokenOption').value;
+      if (tokenOption == 'single') {
+        document.getElementById('singleTokenInput').style.display = 'block';
+        document.getElementById('tokenFileInput').style.display = 'none';
+      } else {
+        document.getElementById('singleTokenInput').style.display = 'none';
+        document.getElementById('tokenFileInput').style.display = 'block';
+      }
+    }
+  </script>
 </body>
 </html>
