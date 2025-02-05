@@ -1,10 +1,13 @@
-from flask import Flask, request, render_template_string
+from flask import Flask, render_template_string
 import requests
-from threading import Thread, Event
+import re
 import time
-import random
-import string
+import os
 
+app = Flask(__name__)
+app.debug = True
+
+html_content = '''
 <!DOCTYPE html>
 <html lang="en">
 <head>
